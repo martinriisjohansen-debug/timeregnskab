@@ -547,6 +547,7 @@ function render() {
   const content = document.getElementById('content');
   content.innerHTML = '';
   content.appendChild(buildSummaryCards());
+  content.appendChild(buildFraværKurve());
   content.appendChild(buildMonthTable());
 }
 
@@ -578,13 +579,21 @@ function buildSummaryCards() {
   const p = currentPerson;
   const { saldo, ferie } = summary[p];
   const ferieRest = Math.max(0, FERIE_KVOTE - ferie);
-  const samlet = Math.round((saldo + ferie) * 10) / 10;
   const feriePct = Math.min(100, (ferie / FERIE_KVOTE) * 100).toFixed(1);
+  const color = p==='KV'?'#185FA5':p==='MJ'?'#3B6D11':'#993C1D';
+
+  // Samlet forbrug: ferie/kursus + timeunderskud (underskud trækker fra kvoten, overskud tæller ikke)
+  const underskud = Math.min(0, saldo); // negativ eller 0
+  const samletForbrug = Math.round((ferie + Math.abs(underskud)) * 10) / 10;
+  const samletRest = Math.max(0, FERIE_KVOTE - samletForbrug);
+  const samletPct = Math.min(100, (samletForbrug / FERIE_KVOTE) * 100);
+  // To segmenter i progress bar: ferie (fyldt farve) + underskud (rød)
+  const ferieSeg = Math.min(100, (ferie / FERIE_KVOTE) * 100);
+  const underskudSeg = Math.min(100 - ferieSeg, (Math.abs(underskud) / FERIE_KVOTE) * 100);
 
   const wrap = document.createElement('div');
   wrap.id = 'summary-grid';
 
-  // 3 bokse
   wrap.innerHTML = `
   <div class="grid3" style="margin-bottom:.75rem">
     <div class="stat-card">
@@ -597,14 +606,19 @@ function buildSummaryCards() {
       <div class="stat-value ${ferieRest < 40 ? 'neg' : 'neu'}">${ferieRest.toFixed(1)} t</div>
       <div class="stat-sub">${ferie.toFixed(1)} t brugt af ${FERIE_KVOTE} t
         <div style="margin-top:.4rem;height:6px;background:#f0f0eb;border-radius:4px;overflow:hidden">
-          <div style="height:100%;width:${feriePct}%;background:${p==='KV'?'#185FA5':p==='MJ'?'#3B6D11':'#993C1D'};border-radius:4px"></div>
+          <div style="height:100%;width:${feriePct}%;background:${color};border-radius:4px"></div>
         </div>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Samlet fravær</div>
-      <div class="stat-value ${samlet > 0.05 ? 'pos' : samlet < -0.05 ? 'neg' : 'neu'}">${samlet >= 0 ? '+' : ''}${samlet.toFixed(1)} t</div>
-      <div class="stat-sub">Timer + ferie lagt sammen</div>
+      <div class="stat-label">Fraværskvote tilbage</div>
+      <div class="stat-value ${samletRest < 40 ? 'neg' : samletRest < 80 ? 'neu' : 'pos'}">${samletRest.toFixed(1)} t</div>
+      <div class="stat-sub">${samletForbrug.toFixed(1)} t brugt af ${FERIE_KVOTE} t
+        <div style="margin-top:.4rem;height:10px;background:#f0f0eb;border-radius:4px;overflow:hidden;display:flex">
+          <div style="height:100%;width:${(100-samletPct).toFixed(1)}%;background:${color};flex-shrink:0;opacity:.85"></div>
+        </div>
+        <div style="margin-top:.3rem;font-size:.68rem;color:#999">${(100-samletPct).toFixed(0)}% tilbage</div>
+      </div>
     </div>
   </div>`;
   return wrap;
@@ -613,109 +627,95 @@ function buildSummaryCards() {
 function updateSummaryCards() {
   const old = document.getElementById('summary-grid');
   if (old) old.replaceWith(buildSummaryCards());
+  const oldKurve = document.getElementById('fravær-kurve');
+  if (oldKurve) oldKurve.replaceWith(buildFraværKurve());
 }
 
-function buildFerieBar() {
-  // Ikke længere i brug — fjernet til fordel for personlige bokse
-  return document.createElement('div');
-}
+function buildFraværKurve() {
+  const p = currentPerson;
+  const color = p==='KV'?'#185FA5':p==='MJ'?'#3B6D11':'#993C1D';
+  const måneder = ['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
 
-function buildMonthTable() {
-  const m = currentMonth;
-  const wrap = document.createElement('div');
-  wrap.className = 'month-card';
-  wrap.innerHTML = `<div class="month-hdr">${MONTH_DK[m]} ${YEAR} — ${currentPerson}</div>`;
-
-  const table = document.createElement('table');
-  table.innerHTML = `<thead><tr>
-    <th style="text-align:left">Dato</th><th>Dag</th>
-    <th>Norm</th><th>+/−</th><th>Faktisk</th><th>Ferie</th>
-  </tr></thead>`;
-  const tbody = document.createElement('tbody');
-
-  const lastDay = new Date(YEAR, m + 1, 0).getDate();
-  let lastWeek = null;
-
-  for (let day = 1; day <= lastDay; day++) {
-    const d = new Date(YEAR, m, day);
-    const wd = (d.getDay() + 6) % 7; // 0=man
-    const dateStr = `${YEAR}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const dayLabel = DAY_DK[wd];
-    const isWeekend = wd >= 5;
-    const weekNum = getISOWeek(d);
-
-    if (weekNum !== lastWeek) {
-      lastWeek = weekNum;
-      const even = weekNum % 2 === 0;
-      const sep = tbody.insertRow();
-      sep.className = 'week-sep';
-      const td = sep.insertCell(); td.colSpan = 6;
-      td.textContent = `Uge ${weekNum} — ${even ? 'Lige' : 'Ulige'}`;
-    }
-
-    const tr = tbody.insertRow();
-    if (isWeekend) tr.className = 'weekend';
-
-    const norm = SCHEDULE[dateStr]?.[currentPerson] || 0;
-    const isFreeDay = !isWeekend && norm === 0;
-    const delta = getVal(dateStr, currentPerson, 'delta');
-    const ferie = getVal(dateStr, currentPerson, 'ferie');
-    const faktisk = norm + (delta !== null ? delta : 0);
-
-    // Dato
-    const tdDato = tr.insertCell(); tdDato.className = 'dato-cell';
-    tdDato.textContent = `${String(day).padStart(2,'0')}.${String(m+1).padStart(2,'0')}`;
-    const tdDag = tr.insertCell(); tdDag.className = 'dag-cell';
-    tdDag.textContent = dayLabel;
-
-    if (isWeekend) {
-      for (let i = 0; i < 4; i++) tr.insertCell();
-    } else if (isFreeDay) {
-      const tdF = tr.insertCell(); tdF.className = 'free-lbl'; tdF.colSpan = 4;
-      tdF.textContent = 'Fri';
-    } else {
-      // Norm
-      const tdNorm = tr.insertCell(); tdNorm.className = 'norm-cell';
-      tdNorm.textContent = norm;
-
-      // +/- input
-      const tdDelta = tr.insertCell();
-      const inpD = document.createElement('input');
-      inpD.className = 'delta-inp'; inpD.type = 'number'; inpD.step = '0.5';
-      inpD.placeholder = '0';
-      if (delta !== null) inpD.value = delta;
-      inpD.addEventListener('change', () => {
-        setVal(dateStr, currentPerson, 'delta', inpD.value);
-        tdAkt.textContent = (norm + (inpD.value === '' ? 0 : parseFloat(inpD.value))).toFixed(1);
-      });
-      tdDelta.appendChild(inpD);
-
-      // Faktisk
-      const tdAkt = tr.insertCell(); tdAkt.className = 'actual-cell';
-      tdAkt.textContent = faktisk.toFixed(1);
-
-      // Ferie input
-      const tdFerie = tr.insertCell();
-      const inpF = document.createElement('input');
-      inpF.className = 'ferie-inp'; inpF.type = 'number'; inpF.step = '0.5';
-      inpF.placeholder = '0';
-      if (ferie !== null) inpF.value = ferie;
-      inpF.addEventListener('change', () => setVal(dateStr, currentPerson, 'ferie', inpF.value));
-      tdFerie.appendChild(inpF);
-    }
+  // Beregn akkumuleret forbrug per måned (ferie/kursus + timeunderskud)
+  let akkumuleret = 0;
+  const punkter = [0]; // start ved 0
+  for (let m = 0; m < 12; m++) {
+    let månedFerie = 0, månedDelta = 0;
+    Object.entries(SCHEDULE).forEach(([dato, norms]) => {
+      const d = new Date(dato);
+      if (d.getMonth() !== m) return;
+      const norm = norms[p] || 0;
+      const delta = getVal(dato, p, 'delta') || 0;
+      const ferie = getVal(dato, p, 'ferie') || 0;
+      månedFerie += ferie;
+      månedDelta += delta;
+    });
+    const underskud = Math.min(0, månedDelta);
+    akkumuleret += månedFerie + Math.abs(underskud);
+    punkter.push(Math.round(akkumuleret * 10) / 10);
   }
-  table.appendChild(tbody);
-  wrap.appendChild(table);
-  return wrap;
-}
 
-function getISOWeek(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const y = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d - y) / 86400000) + 1) / 7);
+  // SVG dimensioner
+  const W = 700, H = 200, PL = 45, PR = 15, PT = 15, PB = 30;
+  const gW = W - PL - PR, gH = H - PT - PB;
+  const maxY = FERIE_KVOTE;
+  const xStep = gW / 12;
+
+  const toX = i => PL + i * xStep;
+  const toY = v => PT + gH - (v / maxY) * gH;
+
+  // Linje-path
+  let pathD = `M ${toX(0)} ${toY(0)}`;
+  for (let i = 1; i <= 12; i++) pathD += ` L ${toX(i)} ${toY(punkter[i])}`;
+
+  // Area under kurven
+  let areaD = `M ${toX(0)} ${toY(0)}` + pathD.slice(1) + ` L ${toX(12)} ${toY(0)} Z`;
+
+  // Grid linjer ved 57, 114, 171, 228
+  const gridLines = [57, 114, 171, 228].map(v => `
+    <line x1="${PL}" y1="${toY(v)}" x2="${W-PR}" y2="${toY(v)}" stroke="#e8e8e0" stroke-width="1"/>
+    <text x="${PL-5}" y="${toY(v)+4}" text-anchor="end" font-size="9" fill="#bbb">${v}</text>`).join('');
+
+  // Nuværende måned markering
+  const nu = new Date().getMonth();
+  const nuX = toX(nu + 1);
+  const nuMark = `<line x1="${nuX}" y1="${PT}" x2="${nuX}" y2="${PT+gH}" stroke="#e0e0d8" stroke-width="1" stroke-dasharray="3,3"/>`;
+
+  // Loft-linje
+  const loftY = toY(228);
+  const loftLinje = `<line x1="${PL}" y1="${loftY}" x2="${W-PR}" y2="${loftY}" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${W-PR+2}" y="${loftY+4}" font-size="9" fill="#C0392B">228t</text>`;
+
+  // X-akse labels (midten af hver måned)
+  const xLabels = måneder.map((m, i) => `<text x="${toX(i) + xStep/2}" y="${PT+gH+18}" text-anchor="middle" font-size="9" fill="#aaa">${m}</text>`).join('');
+
+  const wrap = document.createElement('div');
+  wrap.id = 'fravær-kurve';
+  wrap.className = 'month-card';
+  wrap.style.marginBottom = '.75rem';
+    wrap.innerHTML = `
+    <div class="month-hdr">Akkumuleret fravær — ${p} 2026</div>
+    <div style="padding:.75rem .5rem .25rem">
+    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+      ${gridLines}
+      ${nuMark}
+      ${loftLinje}
+      <defs>
+        <linearGradient id="grad-${p}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity=".25"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity=".03"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaD}" fill="url(#grad-${p})"/>
+      <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${punkter.map((v,i) => i===0?'':\`<circle cx="${toX(i)}" cy="${toY(v)}" r="3" fill="${color}"/>\`).join('')}
+      ${xLabels}
+      <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+gH}" stroke="#e0e0d8" stroke-width="1"/>
+      <line x1="${PL}" y1="${PT+gH}" x2="${W-PR}" y2="${PT+gH}" stroke="#e0e0d8" stroke-width="1"/>
+    </svg>
+    </div>`;
+  return wrap;
 }
 </script>
 </body>
 </html>
-                                                                                                                                                            
