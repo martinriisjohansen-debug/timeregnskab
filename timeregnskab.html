@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markedsstræde — Timeregnskab 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+header{background:#1B2631;color:#fff;padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;position:sticky;top:0;z-index:100}
+header h1{font-size:1rem;font-weight:500;letter-spacing:.02em}
+.person-btns{display:flex;gap:.35rem}
+.person-btn{padding:.35rem .85rem;border-radius:20px;border:1.5px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-size:.82rem;cursor:pointer;transition:all .15s}
+.person-btn.active-kv{background:#185FA5;border-color:#185FA5}
+.person-btn.active-mj{background:#3B6D11;border-color:#3B6D11}
+.person-btn.active-tm{background:#993C1D;border-color:#993C1D}
+.person-btn:hover{background:rgba(255,255,255,.12)}
+.sync-status{font-size:.72rem;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:.3rem}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#4CAF50}
+.sync-dot.syncing{background:#FFC107;animation:pulse .8s infinite}
+.sync-dot.error{background:#F44336}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e8e8e0;padding:0 1rem;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:.65rem .9rem;font-size:.82rem;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s;flex-shrink:0}
+.tab.active{color:#1B2631;border-bottom-color:#1B2631;font-weight:600}
+
+main{max-width:860px;margin:0 auto;padding:1rem}
+
+.btn{background:#1B2631;color:#fff;border:none;border-radius:6px;padding:.4rem .9rem;font-size:.82rem;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#2c3e50}
+.btn-success{background:#3B6D11}
+.btn-sm{padding:.3rem .6rem;font-size:.75rem}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem}
+.stat-card{background:#fff;border-radius:10px;padding:.9rem 1rem;border:1px solid #e8e8e0}
+.stat-label{font-size:.7rem;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem}
+.stat-value{font-size:1.5rem;font-weight:600}
+.stat-sub{font-size:.72rem;color:#999;margin-top:.15rem}
+.pos{color:#1D6A39}.neg{color:#C0392B}.neu{color:#333}
+
+.ferie-card{background:#fff;border-radius:10px;padding:.9rem 1rem;border:1px solid #e8e8e0;margin-bottom:1rem}
+.ferie-card-title{font-size:.72rem;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.8rem}
+.ferie-row{margin-bottom:.55rem}
+.ferie-hdr{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.2rem}
+.ferie-name{font-weight:600}
+.ferie-nums{color:#888}
+.ferie-track{height:7px;background:#f0f0eb;border-radius:4px;overflow:hidden}
+.ferie-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.fill-kv{background:#185FA5}.fill-mj{background:#3B6D11}.fill-tm{background:#993C1D}
+
+.month-card{background:#fff;border-radius:10px;border:1px solid #e8e8e0;overflow:hidden;margin-bottom:1rem}
+.month-hdr{background:#1B2631;color:#fff;padding:.6rem 1rem;font-weight:600;font-size:.9rem}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:#f8f8f4;color:#777;font-weight:600;padding:.45rem .5rem;text-align:center;border-bottom:1px solid #eee;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em}
+td{padding:.38rem .5rem;text-align:center;border-bottom:1px solid #f4f4f0;vertical-align:middle}
+tr.week-sep td{background:#f8f8f4;color:#999;font-size:.72rem;text-align:left;padding:.25rem .5rem;font-weight:600}
+tr.weekend td{color:#ccc;background:#fafaf8}
+td.dato-cell{text-align:left;font-weight:500;color:#555;white-space:nowrap}
+td.dag-cell{color:#aaa;font-size:.75rem}
+td.norm-cell{color:#aaa}
+td.free-lbl{color:#ddd;font-size:.72rem}
+input.delta-inp{width:50px;border:1px solid #c8ddf0;border-radius:5px;padding:.22rem .3rem;text-align:center;font-size:.8rem;background:#EAF4FF;font-family:inherit;-moz-appearance:textfield}
+input.ferie-inp{width:50px;border:1px solid #bde0b5;border-radius:5px;padding:.22rem .3rem;text-align:center;font-size:.8rem;background:#F0F8EC;font-family:inherit;-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+input:focus{outline:none;background:#fff}
+td.actual-cell{font-weight:600;color:#333}
+.spinner{width:28px;height:28px;border:3px solid #eee;border-top-color:#1B2631;border-radius:50%;animation:spin .7s linear infinite;margin:3rem auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading{text-align:center;padding:2rem;color:#999}
+
+.alert{padding:.6rem .9rem;border-radius:8px;font-size:.8rem;margin-bottom:.8rem}
+.alert-info{background:#EAF4FF;border:1px solid #b8d4f0;color:#185FA5}
+.alert-warn{background:#FEF9E7;border:1px solid #F5CBA7;color:#8a6000}
+
+@media(max-width:580px){
+  .grid3{grid-template-columns:1fr 1fr}
+  th,td{padding:.3rem .3rem;font-size:.72rem}
+  input.delta-inp,input.ferie-inp{width:40px;font-size:.72rem}
+  .stat-value{font-size:1.2rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Markedsstræde — Timeregnskab 2026</h1>
+  <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+    <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-txt">Klar</span></div>
+    <div class="person-btns">
+      <button class="person-btn active-kv" id="btn-KV" onclick="setPerson('KV')">KV</button>
+      <button class="person-btn" id="btn-MJ" onclick="setPerson('MJ')">MJ</button>
+      <button class="person-btn" id="btn-TM" onclick="setPerson('TM')">TM</button>
+    </div>
+  </div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<main>
+  <div class="alert alert-warn" id="offline-alert" style="display:none">Ingen forbindelse til Supabase — data gemmes lokalt i browseren.</div>
+  <div id="loading"><div class="spinner"></div><p>Henter data...</p></div>
+  <div id="content" style="display:none"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SCHEDULE = {
+  "2026-01-01":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-01-02":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-01-05":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-01-06":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-01-07":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-01-08":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-01-09":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-01-12":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-01-13":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-01-14":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-01-15":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-01-16":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-01-19":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-01-20":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-01-21":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-01-22":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-01-23":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-01-26":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-01-27":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-01-28":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-01-29":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-01-30":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-02-02":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-02-03":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-02-04":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-02-05":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-02-06":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-02-09":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-02-10":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-02-11":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-02-12":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-02-13":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-02-16":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-02-17":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-02-18":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-02-19":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-02-20":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-02-23":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-02-24":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-02-25":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-02-26":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-02-27":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-03-02":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-03-03":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-03-04":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-03-05":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-03-06":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-03-09":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-03-10":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-03-11":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-03-12":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-03-13":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-03-16":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-03-17":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-03-18":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-03-19":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-03-20":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-03-23":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-03-24":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-03-25":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-03-26":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-03-27":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-03-30":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-03-31":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-04-01":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-04-02":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-04-03":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-04-06":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-04-07":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-04-08":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-04-09":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-04-10":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-04-13":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-04-14":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-04-15":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-04-16":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-04-17":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-04-20":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-04-21":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-04-22":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-04-23":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-04-24":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-04-27":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-04-28":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-04-29":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-04-30":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-05-01":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-05-04":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-05-05":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-05-06":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-05-07":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-05-08":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-05-11":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-05-12":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-05-13":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-05-14":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-05-15":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-05-18":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-05-19":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-05-20":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-05-21":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-05-22":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-05-25":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-05-26":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-05-27":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-05-28":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-05-29":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-06-01":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-06-02":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-06-03":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-06-04":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-06-05":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-06-08":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-06-09":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-06-10":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-06-11":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-06-12":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-06-15":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-06-16":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-06-17":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-06-18":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-06-19":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-06-22":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-06-23":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-06-24":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-06-25":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-06-26":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-06-29":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-06-30":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-07-01":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-07-02":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-07-03":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-07-06":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-07-07":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-07-08":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-07-09":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-07-10":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-07-13":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-07-14":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-07-15":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-07-16":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-07-17":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-07-20":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-07-21":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-07-22":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-07-23":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-07-24":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-07-27":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-07-28":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-07-29":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-07-30":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-07-31":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-08-03":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-08-04":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-08-05":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-08-06":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-08-07":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-08-10":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-08-11":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-08-12":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-08-13":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-08-14":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-08-17":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-08-18":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-08-19":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-08-20":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-08-21":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-08-24":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-08-25":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-08-26":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-08-27":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-08-28":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-08-31":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-09-01":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-09-02":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-09-03":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-09-04":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-09-07":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-09-08":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-09-09":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-09-10":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-09-11":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-09-14":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-09-15":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-09-16":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-09-17":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-09-18":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-09-21":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-09-22":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-09-23":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-09-24":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-09-25":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-09-28":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-09-29":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-09-30":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-10-01":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-10-02":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-10-05":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-10-06":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-10-07":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-10-08":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-10-09":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-10-12":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-10-13":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-10-14":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-10-15":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-10-16":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-10-19":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-10-20":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-10-21":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-10-22":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-10-23":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-10-26":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-10-27":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-10-28":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-10-29":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-10-30":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-11-02":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-11-03":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-11-04":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-11-05":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-11-06":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-11-09":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-11-10":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-11-11":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-11-12":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-11-13":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-11-16":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-11-17":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-11-18":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-11-19":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-11-20":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-11-23":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-11-24":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-11-25":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-11-26":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-11-27":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-11-30":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-12-01":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-12-02":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-12-03":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-12-04":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-12-07":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-12-08":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-12-09":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-12-10":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-12-11":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-12-14":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-12-15":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-12-16":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-12-17":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-12-18":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-12-21":{"KV":0,"MJ":8.0,"TM":6.0},
+  "2026-12-22":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-12-23":{"KV":8.0,"MJ":9.0,"TM":9.0},
+  "2026-12-24":{"KV":8.0,"MJ":0,"TM":6.5},
+  "2026-12-25":{"KV":0,"MJ":8.0,"TM":0},
+  "2026-12-28":{"KV":8.0,"MJ":0,"TM":6.0},
+  "2026-12-29":{"KV":8.0,"MJ":8.0,"TM":6.5},
+  "2026-12-30":{"KV":9.0,"MJ":8.0,"TM":9.0},
+  "2026-12-31":{"KV":0,"MJ":8.0,"TM":0}
+};
+const PREFILL_DATA = [{"dato": "2026-01-02", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-01-06", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-01-07", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-01-07", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-01-08", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-01-13", "person": "TM", "delta": 0, "ferie": 0}, {"dato": "2026-01-14", "person": "KV", "delta": 1, "ferie": 0}, {"dato": "2026-01-14", "person": "TM", "delta": -1, "ferie": 0}, {"dato": "2026-01-20", "person": "KV", "delta": -3, "ferie": 0}, {"dato": "2026-01-21", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-01-26", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-01-26", "person": "TM", "delta": 2, "ferie": 0}, {"dato": "2026-01-27", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-01-28", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-01-28", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-01-30", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-02-03", "person": "KV", "delta": -3, "ferie": 0}, {"dato": "2026-02-04", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-02-09", "person": "TM", "delta": 0, "ferie": 6}, {"dato": "2026-02-10", "person": "TM", "delta": 0, "ferie": 6.5}, {"dato": "2026-02-11", "person": "KV", "delta": 1, "ferie": 0}, {"dato": "2026-02-11", "person": "TM", "delta": 0, "ferie": 9}, {"dato": "2026-02-16", "person": "TM", "delta": 1, "ferie": 0}, {"dato": "2026-02-17", "person": "KV", "delta": -3, "ferie": 0}, {"dato": "2026-02-18", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-02-24", "person": "MJ", "delta": 0, "ferie": 8}, {"dato": "2026-02-25", "person": "KV", "delta": 1, "ferie": 0}, {"dato": "2026-03-02", "person": "TM", "delta": 1, "ferie": 0}, {"dato": "2026-03-04", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-03-05", "person": "KV", "delta": -0.5, "ferie": 0}, {"dato": "2026-03-11", "person": "KV", "delta": 1, "ferie": 0}, {"dato": "2026-03-13", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-03-18", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-03-24", "person": "KV", "delta": -4, "ferie": 0}, {"dato": "2026-03-24", "person": "MJ", "delta": 0, "ferie": 8}, {"dato": "2026-03-24", "person": "TM", "delta": -2, "ferie": 0}, {"dato": "2026-03-25", "person": "KV", "delta": 1, "ferie": 0}, {"dato": "2026-03-25", "person": "TM", "delta": 0, "ferie": 0}, {"dato": "2026-03-30", "person": "MJ", "delta": 0, "ferie": 8}, {"dato": "2026-03-30", "person": "TM", "delta": 2, "ferie": 0}, {"dato": "2026-03-31", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-03-31", "person": "MJ", "delta": 0, "ferie": 8}, {"dato": "2026-03-31", "person": "TM", "delta": 1.5, "ferie": 0}, {"dato": "2026-04-01", "person": "KV", "delta": 0, "ferie": 8}, {"dato": "2026-04-01", "person": "MJ", "delta": 0, "ferie": 8}, {"dato": "2026-04-01", "person": "TM", "delta": -1, "ferie": 0}, {"dato": "2026-04-08", "person": "KV", "delta": 1, "ferie": 0}, {"dato": "2026-04-08", "person": "MJ", "delta": -3, "ferie": 0}, {"dato": "2026-04-10", "person": "KV", "delta": 0, "ferie": 0}, {"dato": "2026-04-15", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-04-21", "person": "KV", "delta": -3, "ferie": 0}, {"dato": "2026-04-21", "person": "MJ", "delta": -2, "ferie": 0}, {"dato": "2026-04-22", "person": "KV", "delta": 1, "ferie": 0}, {"dato": "2026-04-22", "person": "MJ", "delta": -1, "ferie": 0}, {"dato": "2026-04-23", "person": "MJ", "delta": 1, "ferie": 0}, {"dato": "2026-04-29", "person": "MJ", "delta": 1, "ferie": 0}];
+
+const MONTH_DK = ['Januar','Februar','Marts','April','Maj','Juni','Juli','August','September','Oktober','November','December'];
+const DAY_DK = ['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+const FERIE_KVOTE = 228;
+const YEAR = 2026;
+const PERSON_COLORS = {KV:'active-kv',MJ:'active-mj',TM:'active-tm'};
+
+const SB_URL = 'https://ragwtcufvvaavnjgaarb.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhZ3d0Y3VmdnZhYXZuamdhYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTE0MzksImV4cCI6MjA5MzQ4NzQzOX0.RpCGdPIrQPMRkbknHmBiQDqwJGkknoBtrFRfoJJ7Jx4';
+
+let sbClient = null;
+let currentPerson = localStorage.getItem('person') || 'KV';
+let currentMonth = new Date().getMonth();
+let allData = {}; // dato -> person -> {delta, ferie}
+let saveQueue = {};
+let saveTimer = null;
+let isSyncing = false;
+
+// ── Supabase setup ───────────────────────────────────────────────────────
+function initSupabase(url, key) {
+  try {
+    sbClient = window.supabase.createClient(url, key);
+    return true;
+  } catch(e) { return false; }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  initSupabase(SB_URL, SB_KEY);
+  buildTabs();
+  loadData();
+});
+
+function setPerson(p) {
+  currentPerson = p;
+  localStorage.setItem('person', p);
+  ['KV','MJ','TM'].forEach(x => {
+    const btn = document.getElementById('btn-'+x);
+    btn.className = 'person-btn' + (x === p ? ' ' + PERSON_COLORS[p] : '');
+  });
+  render();
+}
+
+function buildTabs() {
+  const tabs = document.getElementById('tabs');
+  MONTH_DK.forEach((m, i) => {
+    const t = document.createElement('div');
+    t.className = 'tab' + (i === currentMonth ? ' active' : '');
+    t.textContent = m.slice(0,3);
+    t.onclick = () => {
+      currentMonth = i;
+      document.querySelectorAll('.tab').forEach((x,j) => x.classList.toggle('active', j===i));
+      render();
+      // Scroll tab into view
+      t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    };
+    tabs.appendChild(t);
+  });
+}
+
+// ── Data load ────────────────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+
+  // Hent lokalt cache
+  const local = localStorage.getItem('timedata_v2');
+  if (local) allData = JSON.parse(local);
+
+  if (sbClient) {
+    setSyncStatus('syncing', 'Henter...');
+    try {
+      const { data, error } = await sbClient.from('timeregistrering').select('*');
+      if (error) throw error;
+      data.forEach(r => {
+        if (!allData[r.dato]) allData[r.dato] = {};
+        allData[r.dato][r.person] = { delta: r.delta, ferie: r.ferie };
+      });
+      saveLocal();
+      setSyncStatus('ok', 'Synkroniseret');
+      document.getElementById('offline-alert').style.display = 'none';
+
+      // Præudfyld eksisterende data hvis tabellen er tom
+      if (data.length === 0 && PREFILL_DATA.length > 0) {
+        await prefillData();
+      }
+    } catch(e) {
+      setSyncStatus('error', 'Offline');
+      document.getElementById('offline-alert').style.display = 'block';
+    }
+  } else {
+    // Ingen Supabase — brug prefill som fallback
+    if (Object.keys(allData).length === 0 && PREFILL_DATA.length > 0) {
+      PREFILL_DATA.forEach(r => {
+        if (!allData[r.dato]) allData[r.dato] = {};
+        allData[r.dato][r.person] = { delta: r.delta, ferie: r.ferie };
+      });
+      saveLocal();
+    }
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+  render();
+}
+
+async function prefillData() {
+  if (!sbClient || !PREFILL_DATA.length) return;
+  setSyncStatus('syncing', 'Importerer data...');
+  try {
+    const { error } = await sbClient.from('timeregistrering').upsert(
+      PREFILL_DATA.map(r => ({ dato: r.dato, person: r.person, delta: r.delta, ferie: r.ferie })),
+      { onConflict: 'dato,person' }
+    );
+    if (!error) {
+      PREFILL_DATA.forEach(r => {
+        if (!allData[r.dato]) allData[r.dato] = {};
+        allData[r.dato][r.person] = { delta: r.delta, ferie: r.ferie };
+      });
+      saveLocal();
+      setSyncStatus('ok', 'Data importeret');
+    }
+  } catch(e) { setSyncStatus('error', 'Import fejlede'); }
+}
+
+function saveLocal() {
+  localStorage.setItem('timedata_v2', JSON.stringify(allData));
+}
+
+// ── Sync ─────────────────────────────────────────────────────────────────
+function setVal(dato, person, field, val) {
+  if (!allData[dato]) allData[dato] = {};
+  if (!allData[dato][person]) allData[dato][person] = { delta: null, ferie: null };
+  allData[dato][person][field] = val === '' ? null : (val === null ? null : parseFloat(val));
+  saveLocal();
+  updateSummaryCards();
+
+  const qkey = dato + '_' + person;
+  saveQueue[qkey] = { dato, person, ...allData[dato][person] };
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushQueue, 1000);
+  setSyncStatus('syncing', 'Gemmer...');
+}
+
+async function flushQueue() {
+  if (!sbClient) { setSyncStatus('ok', 'Lokalt gemt'); return; }
+  const rows = Object.values(saveQueue);
+  saveQueue = {};
+  try {
+    const { error } = await sbClient.from('timeregistrering').upsert(
+      rows.map(r => ({ dato: r.dato, person: r.person, delta: r.delta ?? null, ferie: r.ferie ?? null })),
+      { onConflict: 'dato,person' }
+    );
+    if (error) throw error;
+    setSyncStatus('ok', 'Gemt ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Fejl ved gem');
+    // Sæt tilbage i kø
+    rows.forEach(r => { saveQueue[r.dato+'_'+r.person] = r; });
+  }
+}
+
+function setSyncStatus(state, txt) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-txt');
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+  label.textContent = txt;
+}
+
+function getVal(dato, person, field) {
+  return allData[dato]?.[person]?.[field] ?? null;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render() {
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  content.appendChild(buildSummaryCards());
+  content.appendChild(buildFerieBar());
+  content.appendChild(buildMonthTable());
+}
+
+function calcSummary() {
+  const result = {};
+  ['KV','MJ','TM'].forEach(p => {
+    let faktiskSum = 0, ferieSum = 0;
+    Object.entries(SCHEDULE).forEach(([dato, norms]) => {
+      const norm = norms[p] || 0;
+      const delta = getVal(dato, p, 'delta');
+      const ferie = getVal(dato, p, 'ferie') || 0;
+      // Saldo per dag:
+      // - Ingen ferie: saldo = delta (timeafvigelse fra norm)
+      // - Med ferie: ferie neutraliserer normen → saldo = delta + ferie - norm
+      //   (så 8t ferie på en 8t normdag giver saldo=0)
+      const saldoBidrag = ferie > 0
+        ? (delta !== null ? delta : 0) + ferie - norm
+        : (delta !== null ? delta : 0);
+      faktiskSum += saldoBidrag;
+      ferieSum += ferie;
+    });
+    result[p] = { saldo: Math.round(faktiskSum * 10) / 10, ferie: ferieSum };
+  });
+  return result;
+}
+
+function buildSummaryCards() {
+  const summary = calcSummary();
+  const grid = document.createElement('div');
+  grid.className = 'grid3';
+  grid.id = 'summary-grid';
+  ['KV','MJ','TM'].forEach(p => {
+    const { saldo, ferie } = summary[p];
+    const rest = FERIE_KVOTE - ferie;
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.innerHTML = `
+      <div class="stat-label">${p}</div>
+      <div class="stat-value ${saldo > 0.05 ? 'pos' : saldo < -0.05 ? 'neg' : 'neu'}">${saldo >= 0 ? '+' : ''}${saldo.toFixed(1)} t</div>
+      <div class="stat-sub">Ferie: ${ferie.toFixed(1)} t · Rest: ${rest.toFixed(1)} t</div>`;
+    grid.appendChild(card);
+  });
+  return grid;
+}
+
+function updateSummaryCards() {
+  const old = document.getElementById('summary-grid');
+  if (old) old.replaceWith(buildSummaryCards());
+  const oldBar = document.getElementById('ferie-bar');
+  if (oldBar) oldBar.replaceWith(buildFerieBar());
+}
+
+function buildFerieBar() {
+  const summary = calcSummary();
+  const wrap = document.createElement('div');
+  wrap.className = 'ferie-card';
+  wrap.id = 'ferie-bar';
+  wrap.innerHTML = '<div class="ferie-card-title">Ferieregnskab — akkumuleret</div>';
+  [['KV','fill-kv'],['MJ','fill-mj'],['TM','fill-tm']].forEach(([p, cls]) => {
+    const { ferie } = summary[p];
+    const pct = Math.min(100, (ferie / FERIE_KVOTE) * 100).toFixed(1);
+    const rest = Math.max(0, FERIE_KVOTE - ferie).toFixed(1);
+    wrap.innerHTML += `
+      <div class="ferie-row">
+        <div class="ferie-hdr"><span class="ferie-name">${p}</span><span class="ferie-nums">${ferie.toFixed(1)} t afholdt · ${rest} t tilbage</span></div>
+        <div class="ferie-track"><div class="ferie-fill ${cls}" style="width:${pct}%"></div></div>
+      </div>`;
+  });
+  return wrap;
+}
+
+function buildMonthTable() {
+  const m = currentMonth;
+  const wrap = document.createElement('div');
+  wrap.className = 'month-card';
+  wrap.innerHTML = `<div class="month-hdr">${MONTH_DK[m]} ${YEAR} — ${currentPerson}</div>`;
+
+  const table = document.createElement('table');
+  table.innerHTML = `<thead><tr>
+    <th style="text-align:left">Dato</th><th>Dag</th>
+    <th>Norm</th><th>+/−</th><th>Faktisk</th><th>Ferie</th>
+  </tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  const lastDay = new Date(YEAR, m + 1, 0).getDate();
+  let lastWeek = null;
+
+  for (let day = 1; day <= lastDay; day++) {
+    const d = new Date(YEAR, m, day);
+    const wd = (d.getDay() + 6) % 7; // 0=man
+    const dateStr = `${YEAR}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayLabel = DAY_DK[wd];
+    const isWeekend = wd >= 5;
+    const weekNum = getISOWeek(d);
+
+    if (weekNum !== lastWeek) {
+      lastWeek = weekNum;
+      const even = weekNum % 2 === 0;
+      const sep = tbody.insertRow();
+      sep.className = 'week-sep';
+      const td = sep.insertCell(); td.colSpan = 6;
+      td.textContent = `Uge ${weekNum} — ${even ? 'Lige' : 'Ulige'}`;
+    }
+
+    const tr = tbody.insertRow();
+    if (isWeekend) tr.className = 'weekend';
+
+    const norm = SCHEDULE[dateStr]?.[currentPerson] || 0;
+    const isFreeDay = !isWeekend && norm === 0;
+    const delta = getVal(dateStr, currentPerson, 'delta');
+    const ferie = getVal(dateStr, currentPerson, 'ferie');
+    const faktisk = norm + (delta !== null ? delta : 0);
+
+    // Dato
+    const tdDato = tr.insertCell(); tdDato.className = 'dato-cell';
+    tdDato.textContent = `${String(day).padStart(2,'0')}.${String(m+1).padStart(2,'0')}`;
+    const tdDag = tr.insertCell(); tdDag.className = 'dag-cell';
+    tdDag.textContent = dayLabel;
+
+    if (isWeekend) {
+      for (let i = 0; i < 4; i++) tr.insertCell();
+    } else if (isFreeDay) {
+      const tdF = tr.insertCell(); tdF.className = 'free-lbl'; tdF.colSpan = 4;
+      tdF.textContent = 'Fri';
+    } else {
+      // Norm
+      const tdNorm = tr.insertCell(); tdNorm.className = 'norm-cell';
+      tdNorm.textContent = norm;
+
+      // +/- input
+      const tdDelta = tr.insertCell();
+      const inpD = document.createElement('input');
+      inpD.className = 'delta-inp'; inpD.type = 'number'; inpD.step = '0.5';
+      inpD.placeholder = '0';
+      if (delta !== null) inpD.value = delta;
+      inpD.addEventListener('change', () => {
+        setVal(dateStr, currentPerson, 'delta', inpD.value);
+        tdAkt.textContent = (norm + (inpD.value === '' ? 0 : parseFloat(inpD.value))).toFixed(1);
+      });
+      tdDelta.appendChild(inpD);
+
+      // Faktisk
+      const tdAkt = tr.insertCell(); tdAkt.className = 'actual-cell';
+      tdAkt.textContent = faktisk.toFixed(1);
+
+      // Ferie input
+      const tdFerie = tr.insertCell();
+      const inpF = document.createElement('input');
+      inpF.className = 'ferie-inp'; inpF.type = 'number'; inpF.step = '0.5';
+      inpF.placeholder = '0';
+      if (ferie !== null) inpF.value = ferie;
+      inpF.addEventListener('change', () => setVal(dateStr, currentPerson, 'ferie', inpF.value));
+      tdFerie.appendChild(inpF);
+    }
+  }
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function getISOWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const y = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - y) / 86400000) + 1) / 7);
+}
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
