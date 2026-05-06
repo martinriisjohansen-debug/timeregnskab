@@ -721,13 +721,10 @@ function buildMonthTable() {
   const m = currentMonth;
   const wrap = document.createElement('div');
   wrap.className = 'month-card';
-  wrap.innerHTML = `<div class="month-hdr">${MONTH_DK[m]} ${YEAR} — ${currentPerson}</div>`;
+  wrap.innerHTML = '<div class="month-hdr">' + MONTH_DK[m] + ' ' + YEAR + ' — ' + currentPerson + '</div>';
 
   const table = document.createElement('table');
-  table.innerHTML = `<thead><tr>
-    <th style="text-align:left">Dato</th><th>Dag</th>
-    <th>Norm</th><th>+/−</th><th>Faktisk</th><th>Ferie/kursus</th>
-  </tr></thead>`;
+  table.innerHTML = '<thead><tr><th style="text-align:left">Dato</th><th>Dag</th><th>Norm</th><th>+/−</th><th>Faktisk</th><th>Ferie/kursus</th></tr></thead>';
   const tbody = document.createElement('tbody');
 
   const daysInMonth = new Date(YEAR, m + 1, 0).getDate();
@@ -737,7 +734,7 @@ function buildMonthTable() {
     const date = new Date(YEAR, m, day);
     const wd = date.getDay();
     const isWeekend = wd === 0 || wd === 6;
-    const dateStr = `${YEAR}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dateStr = YEAR + '-' + String(m+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
     const isoWeek = getISOWeek(date);
 
     if (isoWeek !== lastWeek && !isWeekend) {
@@ -746,20 +743,20 @@ function buildMonthTable() {
       sepRow.className = 'week-sep';
       const sepCell = sepRow.insertCell();
       sepCell.colSpan = 6;
-      sepCell.textContent = `Uge ${isoWeek}`;
+      sepCell.textContent = 'Uge ' + isoWeek;
     }
 
     const tr = tbody.insertRow();
     if (isWeekend) tr.className = 'weekend';
 
-    const norm = SCHEDULE[dateStr]?.[currentPerson] || 0;
+    const norm = (SCHEDULE[dateStr] && SCHEDULE[dateStr][currentPerson]) || 0;
     const isFreeDay = !isWeekend && norm === 0;
     const delta = getVal(dateStr, currentPerson, 'delta');
     const ferie = getVal(dateStr, currentPerson, 'ferie');
     const faktisk = norm + (delta !== null ? delta : 0);
 
     const tdDato = tr.insertCell(); tdDato.className = 'dato-cell';
-    tdDato.textContent = `${String(day).padStart(2,'0')}.${String(m+1).padStart(2,'0')}`;
+    tdDato.textContent = String(day).padStart(2,'0') + '.' + String(m+1).padStart(2,'0');
     const tdDag = tr.insertCell(); tdDag.className = 'dag-cell';
     tdDag.textContent = DAY_DK[wd === 0 ? 6 : wd - 1];
 
@@ -772,32 +769,32 @@ function buildMonthTable() {
     if (isFreeDay) {
       tdNorm.textContent = '—';
       const tdD = tr.insertCell(); tdD.className = 'free-lbl'; tdD.textContent = 'Fri';
-      const tdA = tr.insertCell();
-      const tdF = tr.insertCell();
+      tr.insertCell();
+      tr.insertCell();
     } else {
       tdNorm.textContent = norm;
 
-      // Delta input
       const tdD = tr.insertCell();
       const inpD = document.createElement('input');
       inpD.className = 'delta-inp'; inpD.type = 'number'; inpD.step = '0.5';
       inpD.placeholder = '0';
       if (delta !== null) inpD.value = delta;
-      const tdAkt = tr.insertCell(); tdAkt.className = 'actual-cell';
-      tdAkt.textContent = faktisk.toFixed(1);
-      inpD.addEventListener('change', () => {
-        setVal(dateStr, currentPerson, 'delta', inpD.value);
-        tdAkt.textContent = (norm + (inpD.value === '' ? 0 : parseFloat(inpD.value))).toFixed(1);
-      });
       tdD.appendChild(inpD);
 
-      // Ferie input
+      const tdAkt = tr.insertCell(); tdAkt.className = 'actual-cell';
+      tdAkt.textContent = faktisk.toFixed(1);
+
+      inpD.addEventListener('change', function() {
+        setVal(dateStr, currentPerson, 'delta', this.value);
+        tdAkt.textContent = (norm + (this.value === '' ? 0 : parseFloat(this.value))).toFixed(1);
+      });
+
       const tdFerie = tr.insertCell();
       const inpF = document.createElement('input');
       inpF.className = 'ferie-inp'; inpF.type = 'number'; inpF.step = '0.5';
       inpF.placeholder = '0';
       if (ferie !== null) inpF.value = ferie;
-      inpF.addEventListener('change', () => setVal(dateStr, currentPerson, 'ferie', inpF.value));
+      inpF.addEventListener('change', function() { setVal(dateStr, currentPerson, 'ferie', this.value); });
       tdFerie.appendChild(inpF);
     }
   }
