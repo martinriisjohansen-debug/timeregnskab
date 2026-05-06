@@ -594,12 +594,17 @@ function buildSummaryCards() {
   const wrap = document.createElement('div');
   wrap.id = 'summary-grid';
 
+  const overskud = Math.max(0, saldo);
+
   wrap.innerHTML = `
-  <div class="grid3" style="margin-bottom:.75rem">
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:.75rem">
     <div class="stat-card">
       <div class="stat-label">Timeregnskab</div>
       <div class="stat-value ${saldo > 0.05 ? 'pos' : saldo < -0.05 ? 'neg' : 'neu'}">${saldo >= 0 ? '+' : ''}${saldo.toFixed(1)} t</div>
-      <div class="stat-sub">${saldo >= 0 ? 'Timer i overskud' : 'Timer i underskud'}</div>
+      <div class="stat-sub" style="display:flex;gap:.5rem;margin-top:.3rem">
+        <span style="color:#1D6A39;font-weight:600">+${overskud.toFixed(1)} t overskud</span>
+        <span style="color:#C0392B;font-weight:600">${Math.abs(underskud).toFixed(1)} t underskud</span>
+      </div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Ferie/kursus tilbage</div>
@@ -614,10 +619,24 @@ function buildSummaryCards() {
       <div class="stat-label">Fraværskvote tilbage</div>
       <div class="stat-value ${samletRest < 40 ? 'neg' : samletRest < 80 ? 'neu' : 'pos'}">${samletRest.toFixed(1)} t</div>
       <div class="stat-sub">${samletForbrug.toFixed(1)} t brugt af ${FERIE_KVOTE} t
-        <div style="margin-top:.4rem;height:10px;background:#f0f0eb;border-radius:4px;overflow:hidden;display:flex">
-          <div style="height:100%;width:${(100-samletPct).toFixed(1)}%;background:${color};flex-shrink:0;opacity:.85"></div>
+        <div style="margin-top:.4rem;height:8px;background:#f0f0eb;border-radius:4px;overflow:hidden;display:flex">
+          <div style="height:100%;width:${ferieSeg.toFixed(1)}%;background:${color};flex-shrink:0"></div>
+          <div style="height:100%;width:${underskudSeg.toFixed(1)}%;background:#C0392B;flex-shrink:0"></div>
         </div>
-        <div style="margin-top:.3rem;font-size:.68rem;color:#999">${(100-samletPct).toFixed(0)}% tilbage</div>
+        <div style="margin-top:.25rem;display:flex;gap:.5rem;font-size:.68rem">
+          <span style="color:${color}">&#9632; Ferie/kursus</span>
+          ${Math.abs(underskud) > 0.05 ? '<span style="color:#C0392B">&#9632; Underskud</span>' : ''}
+        </div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Samlet fravær</div>
+      <div class="stat-value neg">${samletForbrug.toFixed(1)} t</div>
+      <div class="stat-sub">Ferie/kursus + timeunderskud
+        <div style="margin-top:.4rem;height:8px;background:#f0f0eb;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${samletPct.toFixed(1)}%;background:#888;border-radius:4px"></div>
+        </div>
+        <div style="margin-top:.25rem;font-size:.68rem;color:#999">${samletPct.toFixed(0)}% af ${FERIE_KVOTE} t kvote</div>
       </div>
     </div>
   </div>`;
