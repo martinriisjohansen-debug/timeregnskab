@@ -581,13 +581,16 @@ function buildSummaryCards() {
   grid.id = 'summary-grid';
   ['KV','MJ','TM'].forEach(p => {
     const { saldo, ferie } = summary[p];
-    const rest = FERIE_KVOTE - ferie;
+    const samlet = Math.round((saldo + ferie) * 10) / 10;
     const card = document.createElement('div');
     card.className = 'stat-card';
     card.innerHTML = `
       <div class="stat-label">${p}</div>
       <div class="stat-value ${saldo > 0.05 ? 'pos' : saldo < -0.05 ? 'neg' : 'neu'}">${saldo >= 0 ? '+' : ''}${saldo.toFixed(1)} t</div>
-      <div class="stat-sub">Ferie: ${ferie.toFixed(1)} t · Rest: ${rest.toFixed(1)} t</div>`;
+      <div class="stat-sub" style="margin-top:.3rem;display:flex;flex-direction:column;gap:.15rem">
+        <span>Ferie: ${ferie.toFixed(1)} t</span>
+        <span style="border-top:1px solid #eee;padding-top:.15rem;font-weight:600;color:#333">Samlet: ${samlet >= 0 ? '+' : ''}${samlet.toFixed(1)} t</span>
+      </div>`;
     grid.appendChild(card);
   });
   return grid;
@@ -717,4 +720,3 @@ function getISOWeek(date) {
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
